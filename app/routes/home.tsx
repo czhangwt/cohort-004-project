@@ -8,10 +8,12 @@ import { getAllCategories } from "~/services/categoryService";
 import { CourseStatus } from "~/db/schema";
 import { BookOpen, GraduationCap, Users, ArrowRight, User, Moon, Sun } from "lucide-react";
 import { CourseImage } from "~/components/course-image";
+import { StarRatingDisplay } from "~/components/star-rating";
 import { DevUI } from "~/components/dev-ui";
 import { getAllUsers, getUserById } from "~/services/userService";
 import { getCurrentUserId, getDevCountry } from "~/lib/session";
 import { getCountryTierInfo, COUNTRIES } from "~/lib/ppp";
+import { getAverageRatingsForCourses } from "~/services/reviewService";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -33,6 +35,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   const devCountry = await getDevCountry(request);
   const countryTierInfo = getCountryTierInfo(devCountry);
 
+  // Fetch ratings for featured courses
+  const featuredCourseIds = featured.map((c) => c.id);
+  const ratingsMap = getAverageRatingsForCourses(featuredCourseIds);
+
   return {
     featuredCourses: featured,
     totalCourses: courses.length,
@@ -44,11 +50,12 @@ export async function loader({ request }: Route.LoaderArgs) {
     devCountry,
     countryTierInfo,
     countries: COUNTRIES,
+    ratingsMap,
   };
 }
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { featuredCourses, totalCourses, totalCategories, users, currentUser, devCountry, countryTierInfo, countries } = loaderData;
+  const { featuredCourses, totalCourses, totalCategories, users, currentUser, devCountry, countryTierInfo, countries, ratingsMap } = loaderData;
   const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
@@ -186,6 +193,12 @@ export default function Home({ loaderData }: Route.ComponentProps) {
                     <p className="line-clamp-2 text-sm text-muted-foreground">
                       {course.description}
                     </p>
+                    <div className="mt-2">
+                      <StarRatingDisplay
+                        average={ratingsMap[course.id]?.average ?? null}
+                        count={ratingsMap[course.id]?.count ?? 0}
+                      />
+                    </div>
                   </CardContent>
                   <CardFooter className="flex items-center justify-between text-xs text-muted-foreground">
                     <span className="flex items-center gap-1">

@@ -8,6 +8,8 @@ import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
 import { AlertTriangle, BookOpen, CheckCircle2, GraduationCap, PlayCircle } from "lucide-react";
 import { CourseImage } from "~/components/course-image";
+import { StarRatingDisplay } from "~/components/star-rating";
+import { getAverageRatingsForCourses } from "~/services/reviewService";
 import { data, isRouteErrorResponse } from "react-router";
 
 export function meta() {
@@ -59,7 +61,11 @@ export async function loader({ request }: Route.LoaderArgs) {
   const completedCourses = coursesWithProgress.filter((c) => c.isCompleted);
   const inProgressCourses = coursesWithProgress.filter((c) => !c.isCompleted);
 
-  return { inProgressCourses, completedCourses };
+  // Fetch ratings for all enrolled courses
+  const enrolledCourseIds = enrolledCourses.map((e) => e.courseId);
+  const ratingsMap = getAverageRatingsForCourses(enrolledCourseIds);
+
+  return { inProgressCourses, completedCourses, ratingsMap };
 }
 
 function DashboardCardSkeleton() {
@@ -102,7 +108,7 @@ export function HydrateFallback() {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { inProgressCourses, completedCourses } = loaderData;
+  const { inProgressCourses, completedCourses, ratingsMap } = loaderData;
   const totalCourses = inProgressCourses.length + completedCourses.length;
 
   return (
@@ -169,12 +175,16 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                         </span>
                         <span className="font-medium">{course.progress}%</span>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-muted">
+                      <div className="mb-2 h-2 overflow-hidden rounded-full bg-muted">
                         <div
                           className="h-full rounded-full bg-primary transition-all"
                           style={{ width: `${course.progress}%` }}
                         />
                       </div>
+                      <StarRatingDisplay
+                        average={ratingsMap[course.courseId]?.average ?? null}
+                        count={ratingsMap[course.courseId]?.count ?? 0}
+                      />
                     </CardContent>
                     <CardFooter>
                       {course.nextLessonId ? (
@@ -234,12 +244,16 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
                       </p>
                     </CardHeader>
                     <CardContent className="flex-1">
-                      <div className="flex items-center gap-2 text-sm text-green-600">
+                      <div className="mb-2 flex items-center gap-2 text-sm text-green-600">
                         <CheckCircle2 className="size-4" />
                         <span>
                           Completed — {course.totalLessons} lessons
                         </span>
                       </div>
+                      <StarRatingDisplay
+                        average={ratingsMap[course.courseId]?.average ?? null}
+                        count={ratingsMap[course.courseId]?.count ?? 0}
+                      />
                     </CardContent>
                     <CardFooter>
                       <Link

@@ -15,6 +15,8 @@ import { getUserEnrolledCourses } from "~/services/enrollmentService";
 import { calculateProgress, getCompletedLessonCount } from "~/services/progressService";
 import { resolveCountry } from "~/lib/country.server";
 import { calculatePppPrice } from "~/lib/ppp";
+import { getAverageRatingsForCourses } from "~/services/reviewService";
+import { StarRatingDisplay } from "~/components/star-rating";
 
 export function meta() {
   return [
@@ -71,7 +73,11 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const categories = getAllCategories();
 
-  return { courses: coursesWithLessonCount, categories, search, category, currentUserId };
+  // Fetch average ratings for all courses in the list
+  const courseIds = courses.map((c) => c.id);
+  const ratingsMap = getAverageRatingsForCourses(courseIds);
+
+  return { courses: coursesWithLessonCount, categories, search, category, currentUserId, ratingsMap };
 }
 
 function CourseCardSkeleton() {
@@ -116,7 +122,7 @@ export function HydrateFallback() {
 }
 
 export default function CourseCatalog({ loaderData }: Route.ComponentProps) {
-  const { courses, categories, search, category, currentUserId } = loaderData;
+  const { courses, categories, search, category, currentUserId, ratingsMap } = loaderData;
   const [searchParams] = useSearchParams();
   const navigation = useNavigation();
   const isSearching =
@@ -209,6 +215,12 @@ export default function CourseCatalog({ loaderData }: Route.ComponentProps) {
                   <p className="line-clamp-2 text-sm text-muted-foreground">
                     {course.description}
                   </p>
+                  <div className="mt-2">
+                    <StarRatingDisplay
+                      average={ratingsMap[course.id]?.average ?? null}
+                      count={ratingsMap[course.id]?.count ?? 0}
+                    />
+                  </div>
                 </CardContent>
                 {course.progress !== null && course.progress > 0 && (
                   <CardContent className="pt-0">
