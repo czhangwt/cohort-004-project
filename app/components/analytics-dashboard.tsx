@@ -155,7 +155,7 @@ function RevenueChart({
             <Line
               type="monotone"
               dataKey="revenue"
-              stroke="hsl(var(--primary))"
+              stroke="var(--primary)"
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4 }}
