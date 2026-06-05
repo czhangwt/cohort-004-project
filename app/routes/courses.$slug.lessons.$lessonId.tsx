@@ -33,12 +33,18 @@ import {
 } from "~/services/commentService";
 import type { CommentWithAuthor } from "~/services/commentService";
 import { COMMENT_MAX_LENGTH } from "~/services/commentConstants";
+import {
+  toggleBookmark,
+  isLessonBookmarked,
+  getBookmarkedLessonIds,
+} from "~/services/bookmarkService";
 import { getUserById } from "~/services/userService";
 import { LessonProgressStatus, UserRole } from "~/db/schema";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
 import {
   AlertTriangle,
+  Bookmark,
   CheckCircle2,
   ChevronDown,
   ChevronLeft,
@@ -146,6 +152,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
   let lastWatchPosition = 0;
   let watchProgress = 0;
   let lessonProgressMap: Record<number, string> = {};
+  let bookmarkedLessonIds: number[] = [];
+  let isBookmarked = false;
 
   if (currentUserId) {
     enrolled = isUserEnrolled(currentUserId, course.id);
@@ -177,6 +185,10 @@ export async function loader({ params, request }: Route.LoaderArgs) {
           );
         }
       }
+
+      // Bookmark data for this lesson and all lessons in the course
+      bookmarkedLessonIds = getBookmarkedLessonIds(currentUserId, course.id);
+      isBookmarked = isLessonBookmarked(currentUserId, lessonId);
     }
   }
 
@@ -303,6 +315,8 @@ export async function loader({ params, request }: Route.LoaderArgs) {
     comments,
     courseInstructorId: course.instructorId,
     currentUserRole: currentUserRecord?.role ?? null,
+    bookmarkedLessonIds,
+    isBookmarked,
   };
 }
 
@@ -391,6 +405,15 @@ export async function action({ params, request }: Route.ActionArgs) {
     return { success: true };
   }
 
+  if (intent === "toggle-bookmark") {
+    const enrolled = isUserEnrolled(currentUserId, course.id);
+    if (!enrolled) {
+      throw data("You must be enrolled to bookmark lessons", { status: 403 });
+    }
+    const result = toggleBookmark(currentUserId, lessonId);
+    return { success: true, bookmarked: result.bookmarked };
+  }
+
   throw data("Invalid action", { status: 400 });
 }
 
@@ -446,10 +469,13 @@ export default function LessonViewer({ loaderData }: Route.ComponentProps) {
     comments,
     courseInstructorId,
     currentUserRole,
+    bookmarkedLessonIds,
+    isBookmarked,
   } = loaderData;
   const [autoplay, toggleAutoplay] = useAutoplay();
   const fetcher = useFetcher({ key: `mark-complete-${lesson.id}` });
   const quizFetcher = useFetcher({ key: `quiz-${lesson.id}` });
+  const bookmarkFetcher = useFetcher({ key: `bookmark-${lesson.id}` });
   const navigate = useNavigate();
 
   const isMarking =
@@ -518,6 +544,7 @@ export default function LessonViewer({ loaderData }: Route.ComponentProps) {
         currentLessonId={lesson.id}
         lessonProgressMap={lessonProgressMap}
         enrolled={enrolled}
+        bookmarkedLessonIds={bookmarkedLessonIds}
       />
 
       <div className="flex-1 p-6 lg:p-8">
@@ -565,6 +592,33 @@ export default function LessonViewer({ loaderData }: Route.ComponentProps) {
                   Open Code
                 </Button>
               </a>
+            )}
+            {enrolled && currentUserId && (
+              <bookmarkFetcher.Form method="post">
+                <input
+                  type="hidden"
+                  name="intent"
+                  value="toggle-bookmark"
+                />
+                <Button
+                  type="submit"
+                  variant="outline"
+                  size="sm"
+                >
+                  <Bookmark
+                    className={cn(
+                      "size-4",
+                      bookmarkFetcher.data?.bookmarked !== undefined
+                        ? bookmarkFetcher.data.bookmarked
+                          ? "fill-amber-500 text-amber-500"
+                          : "text-muted-foreground"
+                        : isBookmarked
+                          ? "fill-amber-500 text-amber-500"
+                          : "text-muted-foreground"
+                    )}
+                  />
+                </Button>
+              </bookmarkFetcher.Form>
             )}
           </div>
 
@@ -726,6 +780,7 @@ function CurriculumSidebar({
   currentLessonId,
   lessonProgressMap,
   enrolled,
+  bookmarkedLessonIds,
 }: {
   course: { id: number; title: string; slug: string };
   curriculum: Array<{
@@ -736,6 +791,7 @@ function CurriculumSidebar({
   currentLessonId: number;
   lessonProgressMap: Record<number, string>;
   enrolled: boolean;
+  bookmarkedLessonIds: number[];
 }) {
   // Find which module the current lesson belongs to
   const currentModuleId = curriculum.find((m) =>
@@ -790,6 +846,9 @@ function CurriculumSidebar({
                     )}
                   />
                   <span className="flex-1 text-left">{mod.title}</span>
+                  {mod.lessons.some((l) => bookmarkedLessonIds.includes(l.id)) && (
+                    <Bookmark className="size-3.5 shrink-0 fill-amber-500 text-amber-500" />
+                  )}
                 </button>
 
                 {isExpanded && (
@@ -825,6 +884,9 @@ function CurriculumSidebar({
                               <Circle className="size-3.5 shrink-0" />
                             )}
                             <span className="truncate">{l.title}</span>
+                            {bookmarkedLessonIds.includes(l.id) && (
+                              <Bookmark className="size-3.5 shrink-0 fill-amber-500 text-amber-500" />
+                            )}
                           </Link>
                         </li>
                       );

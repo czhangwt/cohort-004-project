@@ -1,29 +1,12 @@
 # CLAUDE.md
 
-Full-stack course platform (mini Udemy) built with React Router v7 (SSR mode), TypeScript, SQLite (better-sqlite3), and Drizzle ORM.
 
-## Essentials
+When you have a function with more than one parameter with the same type, use an object parameter instead of positional parameters:
 
-- **Package manager**: `pnpm` (not npm)
-- **Import alias**: `~/` maps to `app/`
-- **Database access**: Always use service functions from `app/services/` — never use `db` directly in route loaders/actions.
+```ts
+// BAD
+const addUserToPost = (userId: string, postId: string) => {};
 
-## Core Commands
-
-| Command | Description |
-|---|---|
-| `pnpm dev` | Start dev server at `http://localhost:5173` |
-| `pnpm build` | Production build (SSR) |
-| `pnpm test` | Run all Vitest tests |
-| `pnpm typecheck` | Type-check the project |
-| `pnpm db:migrate` | Run Drizzle migrations against `data.db` |
-| `pnpm db:generate` | Generate new Drizzle migrations from schema changes |
-| `pnpm db:seed` | Seed database with fake data |
-
-## Deeper Dives
-
-- [Architecture](docs/architecture.md) — route structure, service layer, database schema, auth flow, library utilities
-- [Components](docs/components.md) — component inventory and patterns
-- [Testing](docs/testing.md) — Vitest setup, in-memory databases, seed helpers
-- [Full Command Reference](docs/commands.md) — all pnpm scripts
-- [Sandcastle](docs/sandcastle.md) — AI agent orchestration layer
+// GOOD
+const addUserToPost = (opts: { userId: string; postId: string }) => {};
+```

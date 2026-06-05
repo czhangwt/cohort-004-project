@@ -26,7 +26,7 @@ All database access goes through service functions — **never use `db` directly
 - `enrollmentService.ts`, `progressService.ts`, `purchaseService.ts`
 - `quizService.ts`, `quizScoringService.ts`
 - `commentService.ts` (with `commentConstants.ts` for soft-delete constants)
-- `ratingService.ts`, `teamService.ts`, `couponService.ts`, `videoTrackingService.ts`
+- `ratingService.ts`, `teamService.ts`, `couponService.ts`, `videoTrackingService.ts`, `bookmarkService.ts`
 
 ## Library Utilities (`app/lib/`)
 
