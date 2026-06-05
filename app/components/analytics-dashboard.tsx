@@ -290,7 +290,16 @@ export function AnalyticsDashboard({
   period,
 }: AnalyticsDashboardProps) {
   const isMonthly = period === "12m" || period === "all";
-  const isEmpty = analytics.perCourse.length === 0;
+
+  // Show empty state when instructor has no courses OR has courses but no data
+  // in the selected period (no revenue, no enrollments, no ratings).
+  const hasNoCourses = analytics.perCourse.length === 0;
+  const hasNoData =
+    !hasNoCourses &&
+    analytics.totalRevenue === 0 &&
+    analytics.totalEnrollments === 0 &&
+    analytics.ratingCount === 0;
+  const isEmpty = hasNoCourses || hasNoData;
 
   return (
     <div className="mx-auto max-w-7xl p-6 lg:p-8">
