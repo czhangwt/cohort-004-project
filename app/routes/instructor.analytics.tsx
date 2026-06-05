@@ -69,7 +69,7 @@ export function HydrateFallback() {
         <Skeleton className="h-10 w-24" />
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="mb-6 grid gap-4 md:grid-cols-3">
         {Array.from({ length: 3 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-6">
@@ -79,6 +79,26 @@ export function HydrateFallback() {
           </Card>
         ))}
       </div>
+
+      {/* Chart skeleton */}
+      <div className="mb-6">
+        <Card>
+          <CardContent className="pt-6">
+            <Skeleton className="mb-4 h-4 w-32" />
+            <Skeleton className="h-64 w-full rounded-lg" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Table skeleton */}
+      <Card>
+        <CardContent className="pt-6">
+          <Skeleton className="mb-4 h-4 w-36" />
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="mb-3 h-8 w-full" />
+          ))}
+        </CardContent>
+      </Card>
     </div>
   );
 }
