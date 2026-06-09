@@ -603,7 +603,7 @@ describe("analyticsService", () => {
         .returning()
         .get();
 
-      const now = new Date();
+      const oneHourAgo = new Date(Date.now() - 3600000);
       testDb
         .insert(schema.purchases)
         .values([
@@ -612,14 +612,14 @@ describe("analyticsService", () => {
             courseId: base.course.id,
             pricePaid: 4999,
             country: "US",
-            createdAt: now.toISOString(),
+            createdAt: oneHourAgo.toISOString(),
           },
           {
             userId: base.user.id,
             courseId: otherCourse.id,
             pricePaid: 9999,
             country: "US",
-            createdAt: now.toISOString(),
+            createdAt: oneHourAgo.toISOString(),
           },
         ])
         .run();
