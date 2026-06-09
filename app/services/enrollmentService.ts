@@ -7,7 +7,10 @@ import {
   lessons,
   lessonProgress,
   LessonProgressStatus,
+  NotificationType,
 } from "~/db/schema";
+import { getUserById } from "~/services/userService";
+import { createNotification } from "~/services/notificationService";
 
 // ─── Enrollment Service ───
 // Handles enrollment, unenrollment, duplicate prevention, and enrollment validation.
@@ -63,21 +66,22 @@ export function enrollUser(
   sendEmail: boolean,
   skipValidation: boolean
 ) {
+  // Always look up course for notification (and validation when enabled)
+  const course = db
+    .select()
+    .from(courses)
+    .where(eq(courses.id, courseId))
+    .get();
+
+  if (!course) {
+    throw new Error("Course not found");
+  }
+
   if (!skipValidation) {
     // Check if already enrolled
     const existing = findEnrollment(userId, courseId);
     if (existing) {
       throw new Error("User is already enrolled in this course");
-    }
-
-    // Check that the course exists
-    const course = db
-      .select()
-      .from(courses)
-      .where(eq(courses.id, courseId))
-      .get();
-    if (!course) {
-      throw new Error("Course not found");
     }
   }
 
@@ -86,6 +90,17 @@ export function enrollUser(
     .values({ userId, courseId })
     .returning()
     .get();
+
+  // Create enrollment notification for the course instructor
+  const student = getUserById(userId);
+  const studentName = student?.name ?? "A student";
+  createNotification(
+    course.instructorId,
+    NotificationType.Enrollment,
+    "New Enrollment",
+    `${studentName} enrolled in ${course.title}`,
+    `/instructor/${courseId}/students`
+  );
 
   // sendEmail parameter accepted but not implemented (no email service — PRD out of scope)
   if (sendEmail) {
